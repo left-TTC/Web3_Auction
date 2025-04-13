@@ -1,22 +1,30 @@
+use add::add;
 use anchor_lang::solana_program::entrypoint::ProgramResult;
 use anchor_lang::prelude::*;
-use createorcheck::check;
+use create::create;
 
-use crate::crowded_service;
-use crate::CrowdInfo;
+use crate::{AddFundingService, CreateCrowdedService};
 
-pub mod createorcheck;
+pub mod create;
+pub mod add;
 
 pub struct Processor {}
 
 impl Processor {
     
-    pub fn add_amount_or_create_funding_account(
-        ctx: Context<crowded_service>,
-        data: CrowdInfo
+    pub fn create_funding_account(
+        ctx: Context<CreateCrowdedService>,
+        root_name: String,
     ) -> ProgramResult {
-        msg!("start check");
-        check(ctx, data)
+        create(ctx, root_name)
+    }
+
+    pub fn add_funding_amount(
+        ctx:Context<AddFundingService>,
+        add_amount: u64,
+        funding_name: String,
+    ) -> ProgramResult {
+        add(ctx, add_amount, funding_name)
     }
 }
 

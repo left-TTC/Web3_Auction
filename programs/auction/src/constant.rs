@@ -6,8 +6,14 @@ pub mod Constant {
 
     pub const VAULT: Pubkey = pubkey!("2NFji3XWVs2tb8btmGgkunjA9AFTr5x3DaTbsrZ7abGh");
     //only for test
-    pub const ISSUE_PRICE: u64 = 100;
+    pub const ISSUE_PRICE: u64 = 10000000;
 
-    pub const WEB3_NAME_SERVICE: Pubkey = pubkey!("EWVnJDmu8CRLPyuHQqxgR1oFB8WhXBXRENRr1skQZxA9");
+    pub const ADD: u8 = 0;
+
+    pub const DELETE: u8 = 1;
+
+    pub const REGISTER_FUND_FEE: u64 = 100000;
+
+    pub const WEB3_NAME_SERVICE: Pubkey = pubkey!("9WykwriEQGT1RjzJvAa7a31AQ8ZtHGnvmXRaeQ47oQLk");
 }
 
