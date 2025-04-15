@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 
-pub mod Constant {
+pub mod constant {
     use anchor_lang::{prelude::Pubkey, pubkey};
 
     pub const VAULT: Pubkey = pubkey!("2NFji3XWVs2tb8btmGgkunjA9AFTr5x3DaTbsrZ7abGh");

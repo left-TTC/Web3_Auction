@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
-use constant::Constant::{VAULT, WEB3_NAME_SERVICE};
+use constant::constant::{VAULT, WEB3_NAME_SERVICE};
 use web3nameservice::program::Web3NameService;
 
-declare_id!("9avSzeSypv1UnYMJX5Rjp9NrCJGCqxhPwPtaG9mpvcyz");
+declare_id!("2UFgq1J3PJFNMbFGiDF7BvX7HdBVwuu16nVz68gk1ZAW");
 
 pub mod constant;
 pub mod processor;
@@ -146,3 +146,57 @@ pub struct AddFundingService<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{constant::constant::{ADD, DELETE}, utils::check_record_lists};
+
+
+
+    #[test]
+    fn test_check_record_lists() {
+        //construct a new vec by our structure
+        let mut record_lists: Vec<u8> = Vec::new();
+
+        println!("[1] lists start: {:?}", record_lists);
+        println!("[ ] start length: {}", record_lists.len());
+
+        let frist_add_name = String::from("000");
+
+        check_record_lists(
+            &mut record_lists, frist_add_name.clone(), ADD).unwrap();
+
+        println!("[2] add one: {:?}", record_lists);
+
+        let second_add_name = String::from("xyasasdaz");
+
+        check_record_lists(
+            &mut record_lists, second_add_name.clone(), ADD).unwrap();
+
+        println!("[3] add two: {:?}", record_lists);
+
+        check_record_lists(
+            &mut record_lists, second_add_name.clone(), DELETE).unwrap();
+
+        println!("[4] delete the two: {:?}", record_lists);
+
+        let thrid_add_name = String::from("xy");
+
+        check_record_lists(
+            &mut record_lists, thrid_add_name, ADD).unwrap();
+
+        println!("[5] three add: {:?}", record_lists);
+        println!("[ ] now length: {}", record_lists.len());
+
+        let thrid_add_name = String::from("abc");
+
+        check_record_lists(
+            &mut record_lists, thrid_add_name, ADD).unwrap();
+
+        println!("[6] four add: {:?}", record_lists);
+        println!("[ ] now length: {}", record_lists.len());
+        
+    }
+}
+
+

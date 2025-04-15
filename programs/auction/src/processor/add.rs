@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::{msg, Context, CpiContext}, solana_program::entrypoint::ProgramResult, ToAccountInfo};
 use anchor_lang::system_program::{Transfer, transfer};
-use crate::{constant::Constant::DELETE, cpi::cpi::create_root_domain, utils::check_record_lists, AddFundingService};
+use crate::{constant::constant::DELETE, cpi::cpi::create_root_domain, utils::check_record_lists, AddFundingService};
 use anchor_lang::prelude::*;
 
 
@@ -26,7 +26,7 @@ pub fn add(
             funding_name.clone())?;
 
         check_record_lists(
-            &mut ctx.accounts.crowding_account_lists, 
+            &mut ctx.accounts.crowding_account_lists.account_lists, 
             funding_name, 
             DELETE)?;
 
@@ -59,7 +59,7 @@ pub fn add(
             funding_name.clone())?;
 
         check_record_lists(
-            &mut ctx.accounts.crowding_account_lists, 
+            &mut ctx.accounts.crowding_account_lists.account_lists, 
             funding_name, 
             DELETE)?;
     }

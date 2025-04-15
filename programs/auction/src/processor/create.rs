@@ -2,7 +2,7 @@ use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 use left_utils::{get_hashed_name, get_PDA_key};
 use anchor_lang::system_program::{Transfer, transfer};
 
-use crate::constant::Constant::{ADD, ISSUE_PRICE, REGISTER_FUND_FEE, WEB3_NAME_SERVICE};
+use crate::constant::constant::{ADD, ISSUE_PRICE, REGISTER_FUND_FEE, WEB3_NAME_SERVICE};
 
 use crate::utils::check_record_lists;
 use crate::CreateCrowdedService;
@@ -33,7 +33,7 @@ pub fn create(
 
     let funding_lists = &mut ctx.accounts.crowding_account_lists;
     
-    check_record_lists(funding_lists, root, ADD)?;
+    check_record_lists(&mut funding_lists.account_lists, root, ADD)?;
 
     let combined_str = String::from_utf8(ctx.accounts.crowding_account_lists.account_lists.clone()).unwrap_or_else(|_| "Invalid UTF-8".to_string());
     msg!("saved string: {}", combined_str);
