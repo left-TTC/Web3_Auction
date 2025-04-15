@@ -19,8 +19,8 @@ pub fn add(
 
         create_root_domain(
             &ctx.accounts.web3_name_service, 
-            &ctx.accounts.will_create_root, 
-            &ctx.accounts.all_root_record_account, 
+            &mut ctx.accounts.will_create_root, 
+            &mut ctx.accounts.all_root_record_account, 
             &ctx.accounts.system_program, 
             &ctx.accounts.payer, 
             funding_name.clone())?;
@@ -52,8 +52,8 @@ pub fn add(
         msg!("have enough coin, start create root domain");
         create_root_domain(
             &ctx.accounts.web3_name_service, 
-            &ctx.accounts.will_create_root, 
-            &ctx.accounts.all_root_record_account, 
+            &mut ctx.accounts.will_create_root, 
+            &mut ctx.accounts.all_root_record_account, 
             &ctx.accounts.system_program, 
             &ctx.accounts.payer, 
             funding_name.clone())?;

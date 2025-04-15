@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use constant::Constant::{VAULT, WEB3_NAME_SERVICE};
 use web3nameservice::program::Web3NameService;
 
-declare_id!("4FvqywYKRiv1uhah5Y1s39PZqoX7qLVjMiyUhguSwbvv");
+declare_id!("9avSzeSypv1UnYMJX5Rjp9NrCJGCqxhPwPtaG9mpvcyz");
 
 pub mod constant;
 pub mod processor;
@@ -36,6 +36,9 @@ pub struct CreateCrowdedService<'info> {
     // calculate by the web3 name service
     pub will_create_root: UncheckedAccount<'info>,
 
+    #[account(mut)]
+    caller: Signer<'info>,
+
     //record the state of fundrasing
     //in create we only init
     #[account(
@@ -49,9 +52,6 @@ pub struct CreateCrowdedService<'info> {
         bump
     )]
     pub fundraising_state_account: Account<'info, CrowdfundingAccount>,
-
-    #[account(mut)]
-    caller: Signer<'info>,
 
     pub system_program: Program<'info, System>,
 
@@ -123,7 +123,12 @@ pub struct AddFundingService<'info> {
     pub all_root_record_account: UncheckedAccount<'info>,
     
     #[account(
-        owner = crate::ID
+        mut,
+        seeds = [
+            b"web3 Auction",
+            will_create_root.key.to_bytes().as_ref(),
+        ],
+        bump
     )]
     pub fundraising_state_account: Account<'info, CrowdfundingAccount>,
 
