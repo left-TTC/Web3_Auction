@@ -11,7 +11,7 @@ import { assert } from "console";
 
 const HASH_PREFIX = "WEB3 Name Service";
 
-export const WEB3_NAME_SERVICE_ID = new PublicKey("9WykwriEQGT1RjzJvAa7a31AQ8ZtHGnvmXRaeQ47oQLk");
+export const WEB3_NAME_SERVICE_ID = new PublicKey("7jCvwtaAUda4SMYh24uuAS8nCYxDaKv5EuaP3qvXJYPs");
 
 
 export function getHashedName(name: string){
@@ -121,7 +121,6 @@ describe("auction", () => {
       console.log("Account not found");
     }
 
-    console.log("Account Info:", accountInfo);
 
   })
 
@@ -139,29 +138,28 @@ describe("auction", () => {
 
   const rootFundStateAccount =  checkFundingStateAccount(program.programId, willCreateRootPda);
 
-  // it("add", async () => {
-  //     try{
-  //       if(rootFundStateAccount){
-  //           const addTx = await program.methods
-  //               .addFunding(addAmount, willCreateName)
-  //               .accounts({
-  //                   willCreateRoot: willCreateRootPda,
-  //                   allRootRecordAccount: allRootRecordPda,
-  //                   fundraisingStateAccount: rootFundStateAccount,
-  //                   payer: payer.publicKey,
-  //               })
-  //               .rpc()
+  it("add", async () => {
+      try{
+        if(rootFundStateAccount){
+            const addTx = await program.methods
+                .addFunding(addAmount, willCreateName)
+                .accounts({
+                    willCreateRoot: willCreateRootPda,
+                    allRootRecordAccount: allRootRecordPda,
+                    payer: payer.publicKey,
+                })
+                .rpc()
 
-  //           console.log('add:', addTx);
+            console.log('add:', addTx);
 
-  //           return addTx;
-  //       }else{
-  //           throw new Error("no this account");
-  //       }
-  //   }catch(err){
-  //     console.error('Error creating name:', err);
-  //   }
-  // })
+            return addTx;
+        }else{
+            throw new Error("no this account");
+        }
+    }catch(err){
+      console.error('Error creating name:', err);
+    }
+  })
 
         
 });

@@ -20,7 +20,7 @@ impl Processor {
     }
 
     pub fn add_funding_amount(
-        ctx:Context<AddFundingService>,
+        ctx: Context<AddFundingService>,
         add_amount: u64,
         funding_name: String,
     ) -> ProgramResult {

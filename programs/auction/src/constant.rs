@@ -14,6 +14,6 @@ pub mod constant {
 
     pub const REGISTER_FUND_FEE: u64 = 100000;
 
-    pub const WEB3_NAME_SERVICE: Pubkey = pubkey!("7jCvwtaAUda4SMYh24uuAS8nCYxDaKv5EuaP3qvXJYPs");
+    pub const WEB3_NAME_SERVICE: Pubkey = pubkey!("77tWhvBTKvZVHudKKLV9EpzwFoTrGAJL9gwuNUA9MaRY");
 }
 
