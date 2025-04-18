@@ -13,6 +13,10 @@ pub fn create(
     root: String,
 ) -> ProgramResult {
     msg!("[1] start");
+    if root.contains(".") {
+        msg!("can't contains '.'");
+        return Err(ProgramError::InvalidArgument);
+    }
 
     msg!("[2] check will create root");
     //create is root, so root_opt is None
@@ -33,7 +37,7 @@ pub fn create(
 
     let funding_lists = &mut ctx.accounts.crowding_account_lists;
     
-    check_record_lists(funding_lists, &ctx.accounts.system_program, &ctx.accounts.caller, root, ADD)?;
+    check_record_lists(&mut funding_lists.account_lists,  root, ADD)?;
 
     let combined_str = String::from_utf8(ctx.accounts.crowding_account_lists.account_lists.clone()).unwrap_or_else(|_| "Invalid UTF-8".to_string());
     msg!("saved string: {}", combined_str);

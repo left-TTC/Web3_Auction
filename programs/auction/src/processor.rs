@@ -2,11 +2,13 @@ use add::add;
 use anchor_lang::solana_program::entrypoint::ProgramResult;
 use anchor_lang::prelude::*;
 use create::create;
+use realloc::realloc;
 
-use crate::{AddFundingService, CreateCrowdedService};
+use crate::{AddFundingService, CreateCrowdedService, ReallocListService};
 
 pub mod create;
 pub mod add;
+pub mod realloc;
 
 pub struct Processor {}
 
@@ -25,6 +27,13 @@ impl Processor {
         funding_name: String,
     ) -> ProgramResult {
         add(ctx, add_amount, funding_name)
+    }
+
+    pub fn realloc_list_account_space(
+        ctx: Context<ReallocListService>,
+        add: u8,
+    ) -> ProgramResult {
+        realloc(ctx, add)
     }
 }
 

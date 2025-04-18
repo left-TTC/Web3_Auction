@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use constant::constant::{VAULT, WEB3_NAME_SERVICE};
 use web3nameservice::program::Web3NameService;
 
-declare_id!("GFYGJHyekQawB4aTRerjAGighr64BYCwTaMGe3C11dCS");
+declare_id!("CSYfnHzWsnvqnixF3WvF5eua7hxC8q1przzapqCauLUA");
 
 pub mod constant;
 pub mod processor;
@@ -12,8 +12,6 @@ pub mod utils;
 #[program]
 pub mod auction {
     use anchor_lang::solana_program::entrypoint::ProgramResult;
-
-    use crate::utils::realloc_list_account_space;
 
     use super::*;
 
@@ -30,13 +28,39 @@ pub mod auction {
         processor::Processor::add_funding_amount(ctx, add, funding_name)
     }
 
-    pub fn test_realloc(
-        ctx: Context<FunctionTest>,
+    pub fn list_realloc(
+        ctx: Context<ReallocListService>,
+        magnification: u8,
     ) -> ProgramResult {
-        realloc_list_account_space(&mut ctx.accounts.crowding_account_lists, &ctx.accounts.system_program, &ctx.accounts.payer)
+        processor::Processor::realloc_list_account_space(ctx, magnification)
     }
 
 }
+
+#[derive(Accounts)]
+pub struct InitService<'info> {
+    #[account(
+        init,
+        space = 8 + 4 + 32,
+        payer = initer,
+        seeds = [
+            b"web3 auction account list",
+        ],
+        bump
+    )]
+    pub crowding_account_lists: Account<'info, FundingAccountRecord>,
+
+    pub system_program: Program<'info, System>,
+
+    #[account(mut)]
+    pub initer: Signer<'info>,
+}
+
+#[account]
+pub struct FundingAccountRecord {
+    account_lists: Vec<u8>,
+} 
+
 
 #[derive(Accounts)]
 pub struct CreateCrowdedService<'info> {
@@ -53,7 +77,7 @@ pub struct CreateCrowdedService<'info> {
     #[account(
         init,
         payer = caller,
-        space = 8 + 8 + 32 + 8 + 1,
+        space = 8 + 8 + 32 + 8,
         seeds = [
             b"web3 Auction",
             will_create_root.key.to_bytes().as_ref(),
@@ -68,9 +92,7 @@ pub struct CreateCrowdedService<'info> {
     //When enough money is collected
     //create desinated domain and delete it from the lists
     #[account(
-        init_if_needed,
-        payer = caller,
-        space = 8 + 4 + 32,
+        mut,
         seeds = [
             b"web3 auction account list",
         ],
@@ -95,11 +117,6 @@ pub struct CrowdfundingAccount {
 
     funding_target: u64,
 }
-
-#[account]
-pub struct FundingAccountRecord {
-    account_lists: Vec<u8>,
-} 
 
 #[derive(Accounts)]
 pub struct AddFundingService<'info> {
@@ -158,13 +175,17 @@ pub struct AddFundingService<'info> {
 
 
 #[derive(Accounts)]
-pub struct FunctionTest<'info> {
+#[instruction(magnification: u8 )]
+pub struct ReallocListService<'info> {
     #[account(
         mut,
         seeds = [
             b"web3 auction account list",
         ],
-        bump
+        bump,
+        realloc = 8 + 4 + 32*(magnification as usize),
+        realloc::payer = payer,
+        realloc::zero = false
     )]
     pub crowding_account_lists: Account<'info, FundingAccountRecord>,
 
@@ -179,98 +200,11 @@ pub struct FunctionTest<'info> {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 #[cfg(test)]
 mod test {
-    use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult, Discriminator};
+    use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 
     use crate::{constant::constant::{ADD, DELETE}, utils::{check_record_lists, find_subsequence}, FundingAccountRecord};
-
-
-    fn test_fn(
-        list: &mut Vec<u8>,
-        check_name: String,
-        operation: u8,
-    ) -> ProgramResult {
-        const BLOCK_SIZE: usize = 32;
-
-        match operation {
-            ADD => {
-                const SEPARATION: &[u8] = b".";
-    
-                let check_bytes = check_name.as_bytes();
-                let require_space = check_bytes.len() + SEPARATION.len();
-    
-                let list_len = list.len();
-    
-                //First, get the space that can be covered in the account
-                let mut could_fill_zero: usize = 0;
-                for i in 0..list_len {
-                    if list[i] == 0 {
-                        could_fill_zero += 1;
-                    }
-                }
-    
-                let useful_space = BLOCK_SIZE - list_len % BLOCK_SIZE;
-    
-                if ((useful_space + could_fill_zero) < require_space) || ((useful_space == 0) && (list_len > 0)){
-                    msg!("space is not enough");
-                    //Reallocate space
-                    //realloc_list_account_space(funding_list_account, &system_account, &payer)?;
-                }
-    
-                list.truncate(list_len - could_fill_zero);
-    
-                let will_add_zero = if could_fill_zero > require_space {
-                    could_fill_zero - require_space
-                } else {
-                    0
-                };
-    
-                list.extend_from_slice(check_bytes);
-                list.extend_from_slice(SEPARATION);
-    
-                if will_add_zero > 0 {
-                    list.extend(std::iter::repeat(0).take(will_add_zero));
-                }
-            }
-            DELETE => {
-                const SEPARATION: u8 = b'.';
-    
-                let delete_bytes = check_name.as_bytes();
-                let mut delete_block = Vec::with_capacity(delete_bytes.len() + 1);
-                delete_block.extend_from_slice(delete_bytes);
-                delete_block.push(SEPARATION);
-    
-                if let Some(pos) = find_subsequence(list, &delete_block){
-                    let end_pos = pos + delete_block.len();
-                    list.splice(pos..end_pos, std::iter::empty());
-    
-                    let zeros_to_fill = delete_block.len();
-                    list.extend(std::iter::repeat(0).take(zeros_to_fill));
-                }else {
-                    msg!("can't find the root domain");
-                    return Err(ProgramError::InvalidArgument);
-                }
-            }
-            _ => {
-                msg!("unkonw instruction");
-                return Err(ProgramError::InvalidArgument);
-            }
-        }
-
-        Ok(())
-    }
 
     #[test]
     fn test_check_record_lists<'a>() {
@@ -282,26 +216,26 @@ mod test {
 
         let frist_add_name = String::from("000");
 
-        test_fn(
+        check_record_lists(
             &mut record_lists, frist_add_name.clone(), ADD).unwrap();
 
         println!("[2] add one: {:?}", record_lists);
 
         let second_add_name = String::from("xyasasdaz");
 
-        test_fn(
+        check_record_lists(
             &mut record_lists, second_add_name.clone(), ADD).unwrap();
 
         println!("[3] add two: {:?}", record_lists);
 
-        test_fn(
+        check_record_lists(
             &mut record_lists, second_add_name.clone(), DELETE).unwrap();
 
         println!("[4] delete the two: {:?}", record_lists);
 
         let thrid_add_name = String::from("xy");
 
-        test_fn(
+        check_record_lists(
             &mut record_lists, thrid_add_name, ADD).unwrap();
 
         println!("[5] three add: {:?}", record_lists);
@@ -309,7 +243,7 @@ mod test {
 
         let thrid_add_name = String::from("abc");
 
-        test_fn(
+        check_record_lists(
             &mut record_lists, thrid_add_name, ADD).unwrap();
 
         println!("[6] four add: {:?}", record_lists);
@@ -320,13 +254,11 @@ mod test {
 
     #[test]
     fn decode_funding(){
-        let decode_aray: [u8; 36] = [32, 0, 0, 0, 108, 101, 111, 46, 108, 117, 111, 115, 97, 46, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 46,];
+        let decode_aray: [u8; 44] = [242, 217, 203, 165, 88, 87, 153, 17, 32, 0, 0, 0, 108, 101, 111, 46, 108, 117, 111, 115, 97, 46, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49, 46,];
 
         let result = FundingAccountRecord::deserialize(&mut decode_aray.as_ref()).unwrap();
 
-        println!("decode list: {:?}", result.account_lists);
-        println!("decoded list length: {}", result.account_lists.len());
-        println!("des: {:?}", FundingAccountRecord::DISCRIMINATOR);
+        print!("decode list: {:?}", result.account_lists);
     }
 }
 

@@ -26,9 +26,7 @@ pub fn add(
             funding_name.clone())?;
 
             check_record_lists(
-                &mut ctx.accounts.crowding_account_lists, 
-                &ctx.accounts.system_program,
-                &ctx.accounts.payer,
+                &mut ctx.accounts.crowding_account_lists.account_lists, 
                 funding_name, 
                 DELETE)?;
 
@@ -60,12 +58,10 @@ pub fn add(
             &ctx.accounts.payer, 
             funding_name.clone())?;
 
-        check_record_lists(
-            &mut ctx.accounts.crowding_account_lists, 
-            &ctx.accounts.system_program,
-            &ctx.accounts.payer,
-            funding_name, 
-            DELETE)?;
+            check_record_lists(
+                &mut ctx.accounts.crowding_account_lists.account_lists, 
+                funding_name, 
+                DELETE)?;
     }
     msg!("[4] check raise money ok");
 
