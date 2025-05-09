@@ -1,0 +1,47 @@
+use {
+    num_derive::FromPrimitive,
+    solana_program::{decode_error::DecodeError, program_error::ProgramError},
+    thiserror::Error,
+};
+
+#[derive(Clone, Debug, Error, FromPrimitive)]
+pub enum AuctionError {
+    #[error("This account is already initialized")]
+    AlreadyInitialized,
+    #[error("Data type mismatch")]
+    DataTypeMismatch,
+    #[error("Wrong account owner")]
+    WrongOwner,
+    #[error("Account is uninitialized")]
+    Uninitialized,
+    #[error("Unsupported validation")]
+    UnsupportedValidation,
+    #[error("Could not recover public key")]
+    Secp256k1Recover,
+    #[error("ETH public key mismatch")]
+    EthPubkeyMismatch,
+    #[error("Wrong domain owner")]
+    WrongDomainOwner,
+    #[error("Numerical overflow")]
+    NumericalOverflow,
+    #[error("Array out of bound")]
+    OutOfBound,
+    #[error("Invalid verifier")]
+    InvalidVerifier,
+    #[error("Wrong parent")]
+    WrongParent,
+    #[error("Wrong class")]
+    WrongClass,
+}
+
+impl From<AuctionError> for ProgramError {
+    fn from(e: AuctionError) -> Self {
+        ProgramError::Custom(e as u32)
+    }
+}
+
+impl<T> DecodeError<T> for AuctionError {
+    fn type_of() -> &'static str {
+        "SnsRecordsError"
+    }
+}
