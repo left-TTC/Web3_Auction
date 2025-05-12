@@ -5,10 +5,10 @@ use solana_program::{
     rent::Rent,
     sysvar::Sysvar,
 };
-use spl_name_service::state::{get_seeds_and_key, NameRecordHeader};
+use spl_name_service::state::NameRecordHeader;
 
 use crate::{
-    central_state, state::{constants::CREATE_FEE, record_header::{write_data, RecordHeader}}, utils::get_hashed_name
+    central_state, state::{constants::CREATE_FEE, record_header::{write_data, RecordHeader}}, utils::{get_hashed_name, get_seeds_and_key}
 };
 
 use {
@@ -58,7 +58,7 @@ pub struct Accounts<'a, T> {
 
     pub web3_name_service: &'a T,
 
-    pub auction_service: &'a T,
+    pub register_service_central: &'a T,
 
     #[cons(writable)]
     pub root_name_account: &'a T,
@@ -69,6 +69,9 @@ pub struct Accounts<'a, T> {
     pub central_state: &'a T,
 
     pub rent_sysvar: &'a T,
+
+    #[cons(writable)]
+    pub create_fee_saver: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -80,19 +83,20 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             root_cord_account: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
             web3_name_service: next_account_info(accounts_iter)?,
-            auction_service: next_account_info(accounts_iter)?,
+            register_service_central: next_account_info(accounts_iter)?,
             root_name_account: next_account_info(accounts_iter)?,
             reverse_lookup: next_account_info(accounts_iter)?,
             central_state: next_account_info(accounts_iter)?,
             rent_sysvar: next_account_info(accounts_iter)?,
+            create_fee_saver: next_account_info(accounts_iter)?,
         };
 
         // Check keys
         check_account_key(accounts.system_program, &system_program::ID)?;
-        check_account_key(accounts.web3_name_service, &spl_name_service::ID)?;
+        // check_account_key(accounts.web3_name_service, &spl_name_service::ID)?;
 
         // Check owners
-        check_account_owner(accounts.root_cord_account, &system_program::ID)?;
+        check_account_owner(accounts.root_cord_account, &crate::ID)?;
 
         // Check signer
         check_signer(accounts.fee_payer)?;
@@ -103,7 +107,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 
 pub fn process(_program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
-    if params.add < 10000 {
+    if params.add < 1000 {
         msg!("add amount is too small");
         return Err(ProgramError::InvalidArgument);
     }
@@ -112,7 +116,7 @@ pub fn process(_program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -
 
     let hashed_name_account = get_hashed_name(&params.root_name);
     
-    let (root_record_key, seeds) = get_seeds_and_key(
+    let (root_record_key, _) = get_seeds_and_key(
         &crate::ID, 
         hashed_name_account.clone(), 
         None, 
@@ -134,11 +138,22 @@ pub fn process(_program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -
         None
     );
 
+    let (fee_saver_key, seeds) = get_seeds_and_key(
+        &crate::ID, 
+        get_hashed_name(&params.root_name), 
+        Some(&central_state::KEY), 
+        Some(&central_state::KEY)
+    );
+
     let root_record_account = accounts.root_cord_account;
 
     check_account_key(accounts.root_cord_account, &root_record_key)?;
     check_account_key(accounts.root_name_account, &root_name_key)?;
+
+    msg!("check reverse, central is {}", central_state::KEY);
     check_account_key(accounts.reverse_lookup, &reserse_look_up)?;
+
+    check_account_key(accounts.create_fee_saver, &fee_saver_key)?;
 
     let root_record_header = 
         RecordHeader::unpack_from_slice(&root_record_account.data.borrow())?;
@@ -149,39 +164,41 @@ pub fn process(_program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -
 
     let central_state_signer_seeds: &[&[u8]] = &[&crate::ID.to_bytes(), &[central_state::NONCE]];
 
-    if new_amount > CREATE_FEE {
+    if new_amount >= CREATE_FEE {
+        msg!("create root account");
         cpi::create_name_account(
             accounts.web3_name_service,
             accounts.system_program,
             accounts.root_name_account,
-            accounts.root_cord_account,
-            accounts.auction_service,
+            accounts.create_fee_saver,
+            accounts.register_service_central,
             hashed_name_account,
             rent.minimum_balance(NameRecordHeader::LEN),
             0,
-            &[&seeds],
+            &seeds,
         )?;
 
+        msg!("create root reverse account");
         if accounts.reverse_lookup.data_len() == 0 {
             cpi::create_reverse_lookup_account(
                 accounts.web3_name_service, 
                 accounts.system_program, 
                 accounts.reverse_lookup, 
-                accounts.root_cord_account, 
+                accounts.create_fee_saver, 
                 params.root_name, 
                 hashed_reverse_lookup, 
                 accounts.central_state, 
                 accounts.rent_sysvar, 
                 central_state_signer_seeds, 
-                &[&seeds],
+                &seeds,
                 None, 
                 None
             )?;
         }
-    }else {
-        let bytes = new_amount.to_le_bytes();
-        write_data(root_record_account, &bytes, 33);
     }
+
+    let bytes = new_amount.to_le_bytes();
+    write_data(root_record_account, &bytes, 32);
 
     Ok(())
 }

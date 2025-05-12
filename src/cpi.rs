@@ -25,7 +25,7 @@ pub fn create_name_account<'a>(
     hashed_name: Vec<u8>,
     lamports: u64,
     space: u32,
-    signer_seeds: &[&[u8]],
+    signer_seeds: &Vec<u8>,
 ) -> ProgramResult {
     let create_name_instruction = spl_name_service::instruction::create(
         *name_service_program.key,
@@ -51,7 +51,7 @@ pub fn create_name_account<'a>(
             new_owner_account.clone(),
             system_program_account.clone(),
         ],
-        &[signer_seeds],
+        &[&signer_seeds.chunks(32).collect::<Vec<&[u8]>>()],
     )
 }
 
@@ -66,7 +66,7 @@ pub fn create_name_account<'a>(
         authority: &AccountInfo<'a>,
         rent_sysvar_account: &AccountInfo<'a>,
         signer_seeds: &[&[u8]],
-        record_seeds: &[&[u8]],
+        record_seeds: &Vec<u8>,
         parent_name_opt: Option<&AccountInfo<'a>>,
         parent_name_owner_opt: Option<&AccountInfo<'a>>,
     ) -> ProgramResult {
@@ -109,7 +109,13 @@ pub fn create_name_account<'a>(
             accounts_update.push(parent_name.clone());
         }
 
-        invoke_signed(&create_name_instruction, &accounts_create, &[record_seeds,signer_seeds])?;
+        invoke_signed(
+            &create_name_instruction, 
+            &accounts_create, 
+            &[
+                &record_seeds.chunks(32).collect::<Vec<&[u8]>>(),
+                signer_seeds
+                ])?;
 
         let write_name_instruction = spl_name_service::instruction::update(
             *name_service_program.key,

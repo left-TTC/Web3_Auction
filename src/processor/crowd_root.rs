@@ -6,9 +6,9 @@ use solana_program::{
     rent::Rent,
     sysvar::Sysvar,
 };
-use spl_name_service::state::{get_seeds_and_key, NameRecordHeader};
+use spl_name_service::state::{NameRecordHeader};
 
-use crate::{state::record_header::RecordHeader, utils::get_hashed_name};
+use crate::{central_state, state::record_header::RecordHeader, utils::{get_hashed_name, get_seeds_and_key}};
 
 use {
     bonfida_utils::{
@@ -51,6 +51,9 @@ pub struct Accounts<'a, T> {
     #[cons(writable, signer)]
     /// The fee payer account
     pub fee_payer: &'a T,
+
+    #[cons(writable)]
+    pub create_fee_saver: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -61,6 +64,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             vault: next_account_info(accounts_iter)?,
             root_cord_account: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
+            create_fee_saver: next_account_info(accounts_iter)?,
         };
 
         // Check keys
@@ -83,7 +87,15 @@ pub fn process(_program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -
         &crate::ID, 
         get_hashed_name(&params.root_name), 
         None, 
-        None);
+        None
+    );
+
+    let (fee_saver_key, _) = get_seeds_and_key(
+        &crate::ID, 
+        get_hashed_name(&params.root_name), 
+        Some(&central_state::KEY), 
+        Some(&central_state::KEY)
+    );
 
     let root_record_account = accounts.root_cord_account;
 
@@ -91,6 +103,8 @@ pub fn process(_program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -
         msg!("The given root account is incorrect.");
         return Err(ProgramError::InvalidArgument);
     }
+
+    check_account_key(accounts.create_fee_saver, &fee_saver_key)?;
 
     if root_record_account.data.borrow().len() > 0 {
         let root_record_header = 
@@ -102,7 +116,8 @@ pub fn process(_program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -
     }
 
     let rent = Rent::get()?;
-    let lamports = rent.minimum_balance(RecordHeader::LEN + NameRecordHeader::LEN * 2);
+    let lamports = rent.minimum_balance(RecordHeader::LEN);
+    let create_fee = rent.minimum_balance(NameRecordHeader::LEN * 6);
 
     if root_record_account.data.borrow().len() == 0 {
         invoke(
@@ -129,7 +144,18 @@ pub fn process(_program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -
             &[accounts.root_cord_account.clone(), accounts.system_program.clone()],
             &[&seeds.chunks(32).collect::<Vec<&[u8]>>()],
         )?;
+
+        invoke(
+            &system_instruction::transfer(
+                accounts.fee_payer.key, accounts.create_fee_saver.key, create_fee), 
+                &[
+                    accounts.fee_payer.clone(),
+                    accounts.create_fee_saver.clone(),
+                    accounts.system_program.clone(),
+                ]
+            )?;
     }
+    
 
     let init_state = RecordHeader {
         root_name_key: root_record_key,
